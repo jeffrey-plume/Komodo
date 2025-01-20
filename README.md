@@ -38,7 +38,7 @@ pip install watchdog pymupdf pillow pyzbar
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/komodo.git
+   git clone https://github.com/jeffrey-plume/komodo.git
    cd komodo
    ```
 
