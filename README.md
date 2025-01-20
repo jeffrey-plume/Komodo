@@ -58,6 +58,8 @@ pip install watchdog pymupdf pillow pyzbar
 4. **Monitor the Output**:
    - Komodo logs all operations to the console and the `file_changes.log` file.
    - Processed file hashes are saved in `file_hashes.json`.
+   - Ignores files with `.tmp` extensions.
+
 
 ---
 
@@ -94,7 +96,6 @@ pip install watchdog pymupdf pillow pyzbar
 
 - Only processes PDFs with image-based barcodes (e.g., QR codes, EAN, Code128).
 - Requires **Poppler** for PDF rendering (install via system package manager if missing).
-- Ignores files with `.tmp` extensions.
 
 ---
 
