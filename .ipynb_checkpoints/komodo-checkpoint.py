@@ -7,7 +7,6 @@ from watchdog.events import FileSystemEventHandler
 import fitz  # PyMuPDF
 from PIL import Image
 from pyzbar.pyzbar import decode
-import time
 
 
 class FileChangeLogger(FileSystemEventHandler):
@@ -97,49 +96,18 @@ class FileChangeLogger(FileSystemEventHandler):
         """Handles file creation events."""
         if not event.is_directory and not self.should_ignore(event.src_path):
             self.pdf_path = event.src_path
-    
-            # Wait for the file to stabilize
-            if not self.wait_for_file_stable(self.pdf_path):
-                print(f"File is not ready: {self.pdf_path}")
-                return
-    
             if self.pdf_path.lower().endswith(".pdf"):
-                try:
-                    renamed_path = self.rename_pdf()
-                    file_hash = self.calculate_file_hash(renamed_path)
-                    if file_hash:
-                        self.hashes[renamed_path] = file_hash
-                        self.save_hash_store()
-                        self.log_change(f"File created and renamed: {renamed_path} (Hash: {file_hash})")
-                except Exception as e:
-                    print(f"Error processing file {self.pdf_path}: {e}")
-
-    def open_pdf_with_retries(self, file_path, retries=5, delay=0.5):
-        """Attempts to open a PDF file with retries."""
-        for _ in range(retries):
-            try:
-                return fitz.open(file_path)
-            except fitz.FileDataError:
-                time.sleep(delay)
-        raise Exception(f"Failed to open file after {retries} retries: {file_path}")
-    
+                renamed_path = self.rename_pdf()
+                file_hash = self.calculate_file_hash(renamed_path)
+                if file_hash:
+                    self.hashes[renamed_path] = file_hash
+                    self.save_hash_store()
+                    self.log_change(f"File created and renamed: {renamed_path} (Hash: {file_hash})")
 
     def should_ignore(self, file_path):
         """Determines if the file should be ignored based on extension."""
         ignored_extensions = ['.tmp']
         return any(file_path.endswith(ext) for ext in ignored_extensions)
-
-    def wait_for_file_stable(self, file_path, max_attempts=5, delay=0.5):
-        """Waits for the file to stabilize (become available for reading)."""
-        attempts = 0
-        while attempts < max_attempts:
-            try:
-                with open(file_path, 'rb') as f:
-                    return True
-            except (PermissionError, IOError):
-                time.sleep(delay)
-                attempts += 1
-        return False
 
 
 def monitor_folder(folder_path, hash_store_path, log_file_path):
