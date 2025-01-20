@@ -109,6 +109,3 @@ Contributions are welcome! Please fork the repository, create a feature branch, 
 This project is licensed under the MIT License. See `LICENSE` for details.
 
 ---
-
-
-This `README.md` introduces **Komodo** with a touch of creativity and clearly outlines its features and usage. Let me know if you want any further refinements! 🦎
