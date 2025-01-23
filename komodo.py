@@ -8,7 +8,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 from pyzbar.pyzbar import decode
 import time
-
+import shutil
 
 class FileChangeLogger(FileSystemEventHandler):
     """Handles file system events, processes barcodes, renames files, and logs changes."""
@@ -92,6 +92,15 @@ class FileChangeLogger(FileSystemEventHandler):
         else:
             print("No barcode found in the file.")
         return self.pdf_path
+        
+    def on_created(self, event):
+        if not event.is_directory:
+            file_hash = self.calculate_file_hash(event.src_path)
+            if file_hash:
+                if organized_path:
+                    self.hashes[organized_path] = file_hash
+                    self.save_hash_store()
+                    self.log_change(f"File created and organized: {organized_path} (Hash: {file_hash})")
 
     def on_created(self, event):
         """Handles file creation events."""
@@ -107,6 +116,8 @@ class FileChangeLogger(FileSystemEventHandler):
                 try:
                     renamed_path = self.rename_pdf()
                     file_hash = self.calculate_file_hash(renamed_path)
+                    organized_path = self.organize_file(renamed_path)
+
                     if file_hash:
                         self.hashes[renamed_path] = file_hash
                         self.save_hash_store()
@@ -141,6 +152,40 @@ class FileChangeLogger(FileSystemEventHandler):
                 attempts += 1
         return False
 
+    def organize_file(self, src_path):
+        """Organizes the file into the appropriate directory."""
+        file_name = os.path.basename(src_path)
+        form_id, month = self.parse_barcode(file_name)
+
+        if form_id and month:
+            # Determine the destination directory
+            dest_dir = os.path.join(".", form_id, month)
+            os.makedirs(dest_dir, exist_ok=True)  # Create directory if it doesn't exist
+
+            # Move the file
+            dest_path = os.path.join(dest_dir, file_name)
+            shutil.move(src_path, dest_path)
+            self.log_change(f"File moved to: {dest_path}")
+            return dest_path
+        else:
+            self.log_change(f"Failed to organize file: {src_path}")
+            return None
+
+    @staticmethod
+    def parse_barcode(file_name):
+        """Parses the barcode from the file name to extract Form ID and Month."""
+        try:
+            # Assuming barcode format is yymmdd[FormID][UserInitials]
+            date_part = file_name[:6]
+            form_id = file_name[6:10]  # Extract between date and user initials
+            year = f"20{date_part[:2]}"
+            month = date_part[2:4]
+            return form_id, f"{year}-{month}"
+        except Exception as e:
+            print(f"Error parsing barcode: {e}")
+            return None, None
+  
+
 
 def monitor_folder(folder_path, hash_store_path, log_file_path):
     """Monitors the folder and logs file changes."""
@@ -161,7 +206,7 @@ def monitor_folder(folder_path, hash_store_path, log_file_path):
 
 
 if __name__ == "__main__":
-    folder_to_monitor = "Testing"  # Folder to monitor
+    folder_to_monitor = "testing"  # Folder to monitor
     hash_store_file = "file_hashes.json"  # JSON file to store file hashes
     log_file = "file_changes.log"  # Log file to record changes
 
